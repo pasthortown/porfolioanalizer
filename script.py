@@ -1,0 +1,79 @@
+import pandas as pd
+import json
+
+archivo_excel = "portafolio.xlsx"
+nombre_hoja = "BASE"
+columnas_deseadas = ["Producto", "Titulo", "Frente", "Correo Electrónico", "Área", "Aprobación", "Prioridad\nPO", "Progreso"]
+areas_excluir = ["DSI", "VE", "PAÍSES", "CL", "AR", "CO", "ES"]
+
+def cargar_contactos_desde_json():
+    with open('salida.json', 'r', encoding='utf-8') as archivo_json:
+        contactos_por_area = json.load(archivo_json)
+    return contactos_por_area
+
+def cargar_data_base(filename, sheet, columns):
+    datos_excel = pd.read_excel(filename, sheet_name=sheet)
+    columnas_filtradas = datos_excel[datos_excel["Prioridad\nPO"].isin(['Q1', 'Q2'])]
+    columnas_filtradas = columnas_filtradas[columns]
+    matriz_datos = columnas_filtradas.values.tolist()
+    return matriz_datos
+
+def get_areas(datos, areas_excluir=None):
+    indice_area = columnas_deseadas.index("Área")
+    columna_area = [fila[indice_area] for fila in datos]
+    columna_area_sin_duplicados = pd.Series(columna_area).drop_duplicates().dropna().tolist()
+    if areas_excluir:
+        columna_area_sin_duplicados = [area for area in columna_area_sin_duplicados if area not in areas_excluir]
+    return columna_area_sin_duplicados
+
+def filtrar_por_area(datos, area):
+    indice_area = columnas_deseadas.index("Área")
+    indice_contacto = columnas_deseadas.index("Correo Electrónico")
+    indices_filtrar = [indice_area, indice_contacto]
+    datos_filtrados = []
+    for fila in datos:
+        if fila[indice_area] == area:
+            fila_filtrada = [fila[i] for i in range(len(fila)) if i not in indices_filtrar]
+            datos_filtrados.append(fila_filtrada)    
+    return datos_filtrados
+
+def obtener_datos_por_areas(base, areas):
+    datos_por_areas = {}
+    for area in areas:
+        datos_filtrados = filtrar_por_area(base, area)
+        datos_por_areas[area] = datos_filtrados
+    return datos_por_areas
+
+def obtener_productos(datos_area):
+    indice_producto = columnas_deseadas.index("Producto")
+    productos_distintos = list(set([fila[indice_producto] for fila in datos_area]))
+    return productos_distintos
+
+def construir_correos_enviar(_areas, _contactos_por_area, _datos_por_areas):
+    correos_enviar = []
+    for area in _areas:
+        contactos_area = _contactos_por_area[area]
+        toPush = {"area": area, "contacto": contactos_area, "data": _datos_por_areas[area], "productos": obtener_productos(_datos_por_areas[area])}
+        correos_enviar.append(toPush)
+    return correos_enviar
+
+def generar_contactos_area():
+    contactos_areas = cargar_data_base(archivo_excel, nombre_hoja, ['Área', 'Correo Electrónico'])
+    contactos_areas_df = pd.DataFrame(contactos_areas, columns=['Área', 'Correo Electrónico'])
+    contactos_areas_df.dropna(subset=['Correo Electrónico'], inplace=True)
+    contactos_areas_df.drop_duplicates(inplace=True)
+    contactos_por_area = {}
+    for area, contacto in zip(contactos_areas_df['Área'], contactos_areas_df['Correo Electrónico']):
+        if area not in contactos_por_area:
+            contactos_por_area[area] = []
+        contactos_por_area[area].append(contacto)
+    with open('salida.json', 'w', encoding='utf-8') as archivo_salida:
+        json.dump(contactos_por_area, archivo_salida, ensure_ascii=False)
+
+generar_contactos_area()
+contactos_por_area = cargar_contactos_desde_json()    
+base = cargar_data_base(archivo_excel, nombre_hoja, columnas_deseadas)
+areas = get_areas(base, areas_excluir)
+datos_por_areas = obtener_datos_por_areas(base, areas)
+correos_enviar = construir_correos_enviar(areas, contactos_por_area ,datos_por_areas)
+print(len(correos_enviar))
