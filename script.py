@@ -57,6 +57,10 @@ def obtener_productos(datos):
     columna_producto_sin_duplicados = pd.Series(columna_producto).drop_duplicates().dropna().tolist()
     return columna_producto_sin_duplicados
 
+def leer_imagen_base64(nombre_archivo):
+    with open(nombre_archivo, "r") as file:
+        return file.read()
+
 def construir_correos_enviar(_areas, _contactos_todos_productos, _contactos_por_area, _datos_por_areas):
     correos_enviar = []
     for area in _areas:
@@ -64,7 +68,8 @@ def construir_correos_enviar(_areas, _contactos_todos_productos, _contactos_por_
         productos = obtener_productos(_datos_por_areas[area])
         contactos_productos = {producto: _contactos_todos_productos[producto] for producto in productos}
         datos_ordenados = sorted(_datos_por_areas[area], key=lambda x: x[0]) 
-        toPush = {"area": area, "contacto": contactos_area, "data": datos_ordenados, "productos": contactos_productos}
+        imagen_base64 = leer_imagen_base64("firma.txt")
+        toPush = {"area": area, "contacto": contactos_area, "data": datos_ordenados, "productos": contactos_productos, "imagen_pie": imagen_base64}
         correos_enviar.append(toPush)
     return correos_enviar
 
