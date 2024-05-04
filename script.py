@@ -1,6 +1,7 @@
 import pandas as pd
 import json
-import csv
+import openpyxl
+import os 
 
 archivo_excel = "portafolio.xlsx"
 nombre_hoja = "BASE"
@@ -62,7 +63,8 @@ def construir_correos_enviar(_areas, _contactos_todos_productos, _contactos_por_
         contactos_area = _contactos_por_area[area]
         productos = obtener_productos(_datos_por_areas[area])
         contactos_productos = {producto: _contactos_todos_productos[producto] for producto in productos}
-        toPush = {"area": area, "contacto": contactos_area, "data": _datos_por_areas[area], "productos": contactos_productos}
+        datos_ordenados = sorted(_datos_por_areas[area], key=lambda x: x[0]) 
+        toPush = {"area": area, "contacto": contactos_area, "data": datos_ordenados, "productos": contactos_productos}
         correos_enviar.append(toPush)
     return correos_enviar
 
@@ -79,24 +81,33 @@ def generar_contactos_area():
     with open('salida.json', 'w', encoding='utf-8') as archivo_salida:
         json.dump(contactos_por_area, archivo_salida, ensure_ascii=False)
 
+def crear_carpeta_si_no_existe(carpeta):
+    if not os.path.exists(carpeta):
+        os.makedirs(carpeta)
+
 def guardar_correos_por_area(correos_enviar):
     for correo in correos_enviar:
         area = correo["area"]
+        crear_carpeta_si_no_existe("salida")
+        carpeta_area = os.path.join("salida", area)
+        crear_carpeta_si_no_existe(carpeta_area)
         correo_sin_data = {
             "area": area,
             "contacto": correo["contacto"],
             "productos": correo["productos"]
         }
-        with open(f'{area}.json', 'w', encoding='utf-8') as archivo_salida:
+        with open(os.path.join(carpeta_area, f'{area}.json'), 'w', encoding='utf-8') as archivo_salida:
             json.dump(correo_sin_data, archivo_salida, ensure_ascii=False)
-        guardar_datos_csv(correo["data"], area + ".csv")
+        guardar_datos(correo["data"], os.path.join(carpeta_area, f'{area}.xlsx'))
 
-def guardar_datos_csv(data, filename):
+def guardar_datos(data, filename):
     column_names = ["Producto", "Requerimiento", "Frente",  "Aprobación", "Prioridad\nPO", "Progreso"]
-    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(column_names)
-        writer.writerows(data)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(column_names)
+    for row in data:
+        ws.append(row)
+    wb.save(filename)
 
 generar_contactos_area()
 contactos_por_area = cargar_contactos_desde_json()    
@@ -105,4 +116,4 @@ areas = get_areas(base, areas_excluir)
 datos_por_areas = obtener_datos_por_areas(base, areas)
 productos = cargar_productos_desde_json()
 correos_enviar = construir_correos_enviar(areas, productos, contactos_por_area ,datos_por_areas)
-print(correos_enviar)
+guardar_correos_por_area(correos_enviar)
