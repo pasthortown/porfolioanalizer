@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import csv
 
 archivo_excel = "portafolio.xlsx"
 nombre_hoja = "BASE"
@@ -78,12 +79,30 @@ def generar_contactos_area():
     with open('salida.json', 'w', encoding='utf-8') as archivo_salida:
         json.dump(contactos_por_area, archivo_salida, ensure_ascii=False)
 
+def guardar_correos_por_area(correos_enviar):
+    for correo in correos_enviar:
+        area = correo["area"]
+        correo_sin_data = {
+            "area": area,
+            "contacto": correo["contacto"],
+            "productos": correo["productos"]
+        }
+        with open(f'{area}.json', 'w', encoding='utf-8') as archivo_salida:
+            json.dump(correo_sin_data, archivo_salida, ensure_ascii=False)
+        guardar_datos_csv(correo["data"], area + ".csv")
+
+def guardar_datos_csv(data, filename):
+    column_names = ["Producto", "Requerimiento", "Frente",  "Aprobación", "Prioridad\nPO", "Progreso"]
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(column_names)
+        writer.writerows(data)
+
 generar_contactos_area()
 contactos_por_area = cargar_contactos_desde_json()    
 base = cargar_data_base(archivo_excel, nombre_hoja, columnas_deseadas)
 areas = get_areas(base, areas_excluir)
 datos_por_areas = obtener_datos_por_areas(base, areas)
 productos = cargar_productos_desde_json()
-print(productos)
 correos_enviar = construir_correos_enviar(areas, productos, contactos_por_area ,datos_por_areas)
-print(productos)
+print(correos_enviar)
