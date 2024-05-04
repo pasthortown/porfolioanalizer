@@ -3,13 +3,18 @@ import json
 
 archivo_excel = "portafolio.xlsx"
 nombre_hoja = "BASE"
-columnas_deseadas = ["Producto", "Titulo", "Frente", "Correo Electrónico", "Área", "Aprobación", "Prioridad\nPO", "Progreso"]
+columnas_deseadas = ["Producto", "Requerimiento", "Frente", "Correo Electrónico", "Área", "Aprobación", "Prioridad\nPO", "Progreso"]
 areas_excluir = ["DSI", "VE", "PAÍSES", "CL", "AR", "CO", "ES"]
 
 def cargar_contactos_desde_json():
     with open('salida.json', 'r', encoding='utf-8') as archivo_json:
         contactos_por_area = json.load(archivo_json)
     return contactos_por_area
+
+def cargar_productos_desde_json():
+    with open('productos.json', 'r', encoding='utf-8') as archivo_json:
+        productos = json.load(archivo_json)
+    return productos
 
 def cargar_data_base(filename, sheet, columns):
     datos_excel = pd.read_excel(filename, sheet_name=sheet)
@@ -44,16 +49,19 @@ def obtener_datos_por_areas(base, areas):
         datos_por_areas[area] = datos_filtrados
     return datos_por_areas
 
-def obtener_productos(datos_area):
+def obtener_productos(datos):
     indice_producto = columnas_deseadas.index("Producto")
-    productos_distintos = list(set([fila[indice_producto] for fila in datos_area]))
-    return productos_distintos
+    columna_producto = [fila[indice_producto] for fila in datos]
+    columna_producto_sin_duplicados = pd.Series(columna_producto).drop_duplicates().dropna().tolist()
+    return columna_producto_sin_duplicados
 
-def construir_correos_enviar(_areas, _contactos_por_area, _datos_por_areas):
+def construir_correos_enviar(_areas, _contactos_todos_productos, _contactos_por_area, _datos_por_areas):
     correos_enviar = []
     for area in _areas:
         contactos_area = _contactos_por_area[area]
-        toPush = {"area": area, "contacto": contactos_area, "data": _datos_por_areas[area], "productos": obtener_productos(_datos_por_areas[area])}
+        productos = obtener_productos(_datos_por_areas[area])
+        contactos_productos = {producto: _contactos_todos_productos[producto] for producto in productos}
+        toPush = {"area": area, "contacto": contactos_area, "data": _datos_por_areas[area], "productos": contactos_productos}
         correos_enviar.append(toPush)
     return correos_enviar
 
@@ -75,5 +83,7 @@ contactos_por_area = cargar_contactos_desde_json()
 base = cargar_data_base(archivo_excel, nombre_hoja, columnas_deseadas)
 areas = get_areas(base, areas_excluir)
 datos_por_areas = obtener_datos_por_areas(base, areas)
-correos_enviar = construir_correos_enviar(areas, contactos_por_area ,datos_por_areas)
-print(len(correos_enviar))
+productos = cargar_productos_desde_json()
+print(productos)
+correos_enviar = construir_correos_enviar(areas, productos, contactos_por_area ,datos_por_areas)
+print(productos)
