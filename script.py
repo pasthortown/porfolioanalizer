@@ -106,7 +106,7 @@ def guardar_correos_por_area(correos_enviar):
         guardar_datos(correo["data"], os.path.join(carpeta_area, f'{area}.xlsx'))
 
 def guardar_datos(data, filename):
-    column_names = ["Producto", "Requerimiento", "Frente",  "Aprobación", "Prioridad\nPO", "Progreso"]
+    column_names = ["Célula Ágil", "Requerimiento", "Frente", "Aprobación", "Prioridad", "Estado"]
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.append(column_names)
