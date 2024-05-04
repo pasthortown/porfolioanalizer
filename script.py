@@ -5,7 +5,7 @@ import os
 
 archivo_excel = "portafolio.xlsx"
 nombre_hoja = "BASE"
-columnas_deseadas = ["Producto", "Requerimiento", "Frente", "Correo Electrónico", "Área", "Aprobación", "Prioridad\nPO", "Progreso"]
+columnas_deseadas = ["Producto", "Requerimiento", "Correo Electrónico", "Área", "Aprobación", "Prioridad\nPO", "Progreso"]
 areas_excluir = ["DSI", "VE", "PAÍSES", "CL", "AR", "CO", "ES"]
 
 def cargar_contactos_desde_json():
@@ -67,7 +67,8 @@ def construir_correos_enviar(_areas, _contactos_todos_productos, _contactos_por_
         contactos_area = _contactos_por_area[area]
         productos = obtener_productos(_datos_por_areas[area])
         contactos_productos = {producto: _contactos_todos_productos[producto] for producto in productos}
-        datos_ordenados = sorted(_datos_por_areas[area], key=lambda x: x[0]) 
+        columnas = _datos_por_areas[area][0]
+        datos_ordenados = sorted(_datos_por_areas[area], key=lambda x: (x[-1], x[0]))
         imagen_base64 = leer_imagen_base64("firma.txt")
         toPush = {"area": area, "contacto": contactos_area, "data": datos_ordenados, "productos": contactos_productos, "imagen_pie": imagen_base64}
         correos_enviar.append(toPush)
@@ -106,7 +107,7 @@ def guardar_correos_por_area(correos_enviar):
         guardar_datos(correo["data"], os.path.join(carpeta_area, f'{area}.xlsx'))
 
 def guardar_datos(data, filename):
-    column_names = ["Célula Ágil", "Requerimiento", "Frente", "Aprobación", "Prioridad", "Estado"]
+    column_names = ["Célula Ágil", "Requerimiento", "Aprobación", "Prioridad", "Estado"]
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.append(column_names)
