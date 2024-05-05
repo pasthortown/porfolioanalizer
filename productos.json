@@ -1,8 +1,8 @@
 {
     "CANALES DIGITALES": { "nombre": "Mychael Castro", "Correo": "mychael.castro@kfc.com.ec"},
-    "MXP LEGACY": { "nombre": "José Fernández", "Correo": "jpse.fernandez@kfc.com.ec"}, 
+    "MXP LEGACY": { "nombre": "José Fernández", "Correo": "jose.fernandez@kfc.com.ec"}, 
     "ERP": { "nombre": "Ramiro Avendaño", "Correo": "ramiro.avendano@kfc.com.ec"}, 
-    "SIR": { "nombre": "Vanesa Soria", "Correo": "vanesa.soria@degasa.cl"}, 
+    "SIR": { "nombre": "Vanesa Soria", "Correo": "vanessa.soria@degasa.cl"}, 
     "SISTEMAS INTERNOS": { "nombre": "Carlos Ortega", "Correo": "carlos.ortega@kfc.com.ec"}, 
     "MXP NUEVO": { "nombre": "Juan Estevez", "Correo": "juan.estevez@kfc.com.ec"}, 
     "Devsecops": { "nombre": "Andrés Romero", "Correo": "andres.romero@kfc.com.ec"}

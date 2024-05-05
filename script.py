@@ -2,11 +2,13 @@ import pandas as pd
 import json
 import openpyxl
 import os 
+import requests
 
 archivo_excel = "portafolio.xlsx"
 nombre_hoja = "BASE"
 columnas_deseadas = ["Producto", "Requerimiento", "Correo Electrónico", "Área", "Aprobación", "Prioridad\nPO", "Progreso"]
 areas_excluir = ["DSI", "VE", "PAÍSES", "CL", "AR", "CO", "ES"]
+url_servidor = "http://localhost:5555/send"
 
 def cargar_contactos_desde_json():
     with open('salida.json', 'r', encoding='utf-8') as archivo_json:
@@ -74,6 +76,34 @@ def construir_correos_enviar(_areas, _contactos_todos_productos, _contactos_por_
         correos_enviar.append(toPush)
     return correos_enviar
 
+def generar_productos(datos):
+    productos = []
+    for producto, info in datos.items():
+        nombre = info["nombre"]
+        email = info["Correo"]
+        productos.append({"producto": producto, "nombre": nombre, "email": email})
+    return productos
+
+def send_mail(datos_correo, destinatarios):
+    payload = {
+        "email": destinatarios,
+        "subject": "Estado de Requerimientos - " + datos_correo["area"],
+        "template_name": "portfolio.html",
+        "attachments": [],
+        "params": {
+            "destinatario": datos_correo["area"],
+            "data": datos_correo["data"],
+            "productos": generar_productos(datos_correo["productos"]),
+            "imagen_firma": datos_correo["imagen_pie"]
+        }
+    }
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url_servidor, json=payload, headers=headers)
+    if response.status_code == 200:
+        return response.json()["response"]
+    else:
+        return None
+        
 def generar_contactos_area():
     contactos_areas = cargar_data_base(archivo_excel, nombre_hoja, ['Área', 'Correo Electrónico'])
     contactos_areas_df = pd.DataFrame(contactos_areas, columns=['Área', 'Correo Electrónico'])
@@ -115,6 +145,22 @@ def guardar_datos(data, filename):
         ws.append(row)
     wb.save(filename)
 
+def enviar_correos_por_area(correos_enviar):
+    for correo in correos_enviar:
+        # productos_data = generar_productos(correo["productos"])
+        # destinatarios = correo["contacto"]
+        destinatarios = []
+        # for producto in productos_data:
+        #     destinatarios.append(producto['email'])
+        destinatarios.append("luis.salazar@kfc.com.ec")
+        # destinatarios.append("jaime.rodriguez@kfc.com.ec")
+        destinatarios.append("cesar.siguenza@kfc.com.ec")
+        destinatarios.append("tatiana.vizcaino@kfc.com.ec")
+        destinatarios.append("daira.ona@kfc.com.ec")
+        destinatarios.append("mario.molina@kfc.com.ec")
+        destinatarios_str = '; '.join(destinatarios)
+        send_mail(correo, destinatarios_str)
+
 generar_contactos_area()
 contactos_por_area = cargar_contactos_desde_json()    
 base = cargar_data_base(archivo_excel, nombre_hoja, columnas_deseadas)
@@ -123,3 +169,4 @@ datos_por_areas = obtener_datos_por_areas(base, areas)
 productos = cargar_productos_desde_json()
 correos_enviar = construir_correos_enviar(areas, productos, contactos_por_area ,datos_por_areas)
 guardar_correos_por_area(correos_enviar)
+enviar_correos_por_area(correos_enviar)
